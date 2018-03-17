@@ -35,6 +35,7 @@ class StationPrinter(object):
             except Exception,e:
                 print Exception,str(e)
             time.sleep(1)
+            print "runing..",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     def reqNewVisitor(self):
         data = {
@@ -106,14 +107,13 @@ class Printer():
     def print2File(self,visitorInfo, htmlPath):
         self.tempPath = "temp.html"
         fcopy(htmlPath,self.tempPath)
-        freplace(self.tempPath,"print_stationName",visitorInfo.get("stationName").encode("utf-8"))
+        freplace(self.tempPath,"print_stationName",visitorInfo.get("stationName","").encode("utf-8"))
         freplace(self.tempPath,"print_number",str(visitorInfo.get("snumber")))
-        freplace(self.tempPath,"print_queue",visitorInfo.get("queueName").encode("utf-8"))
+        freplace(self.tempPath,"print_queue",visitorInfo.get("queueName","").encode("utf-8"))
         freplace(self.tempPath,"print_waitNum",str(visitorInfo.get("waitNum")))
         freplace(self.tempPath,"print_time",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         print "new Visitor Info : "
-        print visitorInfo.get("queueName")," ",visitorInfo.get("snumber")
-        #self.runPrinter()
+        print visitorInfo.get("queueName")," " ,visitorInfo.get("snumber")
         self.runPrinter()
 
 
