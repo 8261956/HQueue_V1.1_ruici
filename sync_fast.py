@@ -8,45 +8,19 @@ import re
 import datetime
 import time
 import web
-from DBIO.DBBase import DBLocal
+from DBIO.DBBase import DBLocal, MSSQLController
 from modules.queueData import QueueDataController
-from common.func import CahedSetValue, CachedGetValue
+from common.func import CahedSetValue, CachedGetValue, multiple_insert_sql
 
 import gevent
 from gevent import monkey, pool
+
 monkey.patch_all()
 
-def multiple_insert_sql(tablename, values):
-
-    if not values:
-        return []
-
-    keys = values[0].keys()
-    # @@ make sure all keys are valid
-
-    for v in values:
-        if v.keys() != keys:
-            raise ValueError, 'Not all rows have the same keys'
-
-    sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
-
-    for i, row in enumerate(values):
-        if i != 0:
-            sql_query.append(", ")
-        SQLQuery.join([SQLParam(row[k]) for k in keys], sep=", ", target=sql_query, prefix="(", suffix=")")
-
-    tmp = []
-    for key in keys:
-        update = "%s=VALUES(%s)" % (key, key)
-        tmp.append(update)
-    update_sql = ' ON DUPLICATE KEY UPDATE %s' % ', '.join(tmp)
-
-    SQLQuery.join(update_sql, sep="", target=sql_query)
-
-    return sql_query
 
 def memcached_wrapper(key, timeout):
     """memcached装饰器"""
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kw):
@@ -56,12 +30,13 @@ def memcached_wrapper(key, timeout):
             result = func(*args, **kw)
             CahedSetValue(json.dumps(key), result, timeout)
             return result
+
         return wrapper
+
     return decorator
 
 
 class SyncManager(object):
-
     def __init__(self):
         self.db = DBLocal
         self.source_db_conn = self.get_source_db_conn()
@@ -72,22 +47,20 @@ class SyncManager(object):
                        db_name):
         """根据配置创建数据库连接"""
 
-        if db_type == "oracle":
-            conn = web.database(
-                dbn=db_type,
-                user=user,
-                pw=password,
-                db=host
-            )
+        config = {
+            "DBType": db_type,
+            "host": host,
+            "port": port,
+            "user": user,
+            "passwd": password,
+            "DBName": db_name,
+            "charset": charset
+        }
+
+        if db_type == 'mssql':
+            conn = MSSQLController(config).MSSQLDB
         else:
-            conn = web.database(
-                dbn=db_type,
-                host=host,
-                port=int(port),
-                user=user,
-                pw=password,
-                db=db_name
-            )
+            conn = web.database(**config)
 
         return conn
 
@@ -168,7 +141,6 @@ class SyncManager(object):
         self.sync_local_data_fast()
 
     def sync_source_data_fast(self):
-        print "SYNC_FAST source in "
         start = datetime.datetime.now()
         for c in self.source_db_conn:
             conn = c["conn"]
@@ -184,7 +156,7 @@ class SyncManager(object):
         for key, value in self.cache.items():
             # self.pool.add(gevent.spawn(self._set_memcached_value, key, value))
             self._set_memcached_value(key, value)
-        self.pool.join()
+        # self.pool.join()
         self.cache = {}
 
     def sync_local_data_fast(self):
@@ -236,32 +208,27 @@ class SyncManager(object):
             conn: 数据源数据库连接
             sql: 查询SQL语句
         """
-        print "SYNC_FAST _sync_source_data "
+
         sync_data = conn.query(sql).list()
         sync_data = self.set_queue_info(sync_data)
         # conn._db_cursor().close()
         # conn.ctx.db.close()
 
         visitor_id_list = [data.id for data in sync_data]
-        
-        print "SYNC_FAST HIS Date len ,", len(visitor_id_list)
         if not visitor_id_list:
             return
-        
         source_visitor = self.db.select("visitor_source_data",
-                            what="id",
-                            where="id IN {0}".format(web.sqlquote(visitor_id_list))
-                            ).list()
+                                        what="id",
+                                        where="id IN {0}".format(
+                                            web.sqlquote(visitor_id_list))
+                                        ).list()
 
         update_visitor_id = [data.id for data in source_visitor]
         insert_visitor_id = list(set(visitor_id_list) ^ set(update_visitor_id))
-	
-        print "SYNC_FAST source item size :", len(update_visitor_id)
-        print "SYNC_FAST insert item size :", len(insert_visitor_id)
 
         for data in sync_data:
             id = data.id
-            queue_info = data.pop("queue_info")
+            queue_info = data.pop("queue_info", None)
             if not queue_info:
                 continue
             stationID = queue_info["stationID"]
@@ -285,7 +252,8 @@ class SyncManager(object):
                 self.cache.setdefault(key, deque([])).append(cached_data)
             else:
                 pass
-        insert_update_sql = multiple_insert_sql("visitor_source_data", sync_data)
+        insert_update_sql = multiple_insert_sql("visitor_source_data",
+                                                sync_data)
         self.db.query(insert_update_sql)
 
     def _sync_local_data(self, stationID, queueID):
@@ -316,7 +284,6 @@ def main():
         intervals = (end - start).seconds
         print "Totally Cost: {0} ms".format(intervals * 1000)
         time.sleep(5)
-	print "runing .."
 
 
 if __name__ == '__main__':

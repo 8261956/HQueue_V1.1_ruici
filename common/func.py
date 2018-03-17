@@ -9,6 +9,7 @@ import common.config as cfg
 from datetime import date
 from datetime import datetime
 from datetime import timedelta
+from web import SQLQuery, SQLParam
 from common.memcachewrapper import memcached_wrapper
 
 class JsonExtendEncoder(json.JSONEncoder):
@@ -106,6 +107,37 @@ def checkSession( token):
     else:
         return True
 
+def multiple_insert_sql(tablename, values):
+    """生成批量插入或者更新数据的SQL语句，改编自web.py的multiple_insert方法"""
+
+    if not values:
+        return []
+
+    keys = values[0].keys()
+    # @@ make sure all keys are valid
+
+    for v in values:
+        if v.keys() != keys:
+            raise ValueError, 'Not all rows have the same keys'
+
+    sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
+
+    for i, row in enumerate(values):
+        if i != 0:
+            sql_query.append(", ")
+        SQLQuery.join([SQLParam(row[k]) for k in keys], sep=", ", target=sql_query, prefix="(", suffix=")")
+
+    tmp = []
+    for key in keys:
+        update = "%s=VALUES(%s)" % (key, key)
+        tmp.append(update)
+    update_sql = ' ON DUPLICATE KEY UPDATE %s' % ', '.join(tmp)
+
+    SQLQuery.join(update_sql, sep="", target=sql_query)
+
+    return sql_query
+
+
 def CachedGetValue(key):
     try:
         mc = memcached_wrapper.getMemcached()
@@ -148,3 +180,4 @@ def list2Dict(list):
     for item in list:
         d[str(item["id"])] = item
     return d
+
