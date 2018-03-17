@@ -8,14 +8,14 @@ import codecs
 import requests
 import datetime
 
-from common.func import CachedGetValue, CahedSetValue
-
 _config = ConfigParser.ConfigParser()
 _config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
 stationID = int(_config.get("station", "stationID"))
 server = _config.get("station", "server")
 htmlPath = _config.get("station", "htmlPath")
 
+
+urlBase = "http://" + server + "/hqueue"
 
 headers = {
     'content-type': 'application/json',
@@ -30,22 +30,24 @@ class StationPrinter(object):
         key = "print_stationID_{0}".format(self.stationID)
 
         while True:
-            queue = CachedGetValue(json.dumps(key))
-            while len(queue):
-                result = queue.popleft()
-                CahedSetValue(json.dumps(key), queue, timeout=0)
-                current_time = datetime.datetime.now()
-                print "[{0}] new visitor: {1}".format(current_time, result)
-            time.sleep(2)
+            try:
+                self.reqNewVisitor()
+            except Exception,e:
+                print Exception,str(e)
+            time.sleep(1)
 
-    def reqNewVisitor():
+    def reqNewVisitor(self):
         data = {
             'action':"getNextVisitor",
             'stationID':self.stationID,
         }
-        html = requests.post(urlBase + 'aqms/main/printer',data = json.dumps(data),headers = headers)
+        html = requests.post(urlBase + '/main/printer',data = json.dumps(data),headers = headers)
         result = html.json()
-        
+        visitorInfo = result.get("detail")
+        if visitorInfo == {}:
+            return
+        else:
+            Printer().print2File(visitorInfo,htmlPath)
 
     def test(self):
         visitorInfo = {
@@ -79,9 +81,9 @@ class Printer():
     def print2File(self,visitorInfo, htmlPath):
         with open(htmlPath, 'r') as f:
             fileContent =  f.read()
-            fileContent.replace("STRING_PARTMENT",visitorInfo.get("department"))
+            fileContent.replace("STRING_PARTMENT",visitorInfo.get("stationName"))
             fileContent.replace("STRING_SNUMBER", str(visitorInfo.get("snumber")))
-            fileContent.replace("STRING_QUEUE", visitorInfo.get("queue"))
+            fileContent.replace("STRING_QUEUE", visitorInfo.get("queueName"))
             fileContent.replace("STRING_TIME", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             with open("temp.html",'w+') as tf:
                 tf.write(fileContent)
@@ -95,8 +97,6 @@ class Printer():
         output = os.popen(cmd)
         print output
         return
-
-
 
 
 if __name__ == '__main__':
