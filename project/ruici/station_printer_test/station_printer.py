@@ -51,11 +51,36 @@ class StationPrinter(object):
 
     def test(self):
         visitorInfo = {
-            "department" : "儿科",
+            "stationName" : "儿科",
             "snumber" : "12",
-            "queue" : "采血1"
+            "queueName" : "采血1"
         }
         Printer().print2File(visitorInfo,htmlPath)
+
+def fcopy(src_path, out_path):  
+  try:  
+    src = file(src_path, "r")  
+    dst = file(out_path, "w")  
+      
+    dst.write(src.read())  
+      
+    src.close()  
+    dst.close()  
+  except Exception,e:  
+    print e  
+
+def freplace(file_path,old_str, new_str):  
+  try:  
+    f = open(file_path,'r+')  
+    all_lines = f.readlines()  
+    f.seek(0)  
+    f.truncate()  
+    for line in all_lines:  
+      line = line.replace(old_str, new_str)  
+      f.write(line)  
+    f.close()  
+  except Exception,e:  
+    print e  
 
 
 class Printer():
@@ -79,18 +104,21 @@ class Printer():
         return win_dir
 
     def print2File(self,visitorInfo, htmlPath):
-        with open(htmlPath, 'r') as f:
-            fileContent =  f.read()
-            fileContent.replace("STRING_PARTMENT",visitorInfo.get("stationName"))
-            fileContent.replace("STRING_SNUMBER", str(visitorInfo.get("snumber")))
-            fileContent.replace("STRING_QUEUE", visitorInfo.get("queueName"))
-            fileContent.replace("STRING_TIME", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-            with open("temp.html",'w+') as tf:
-                tf.write(fileContent)
-                self.runPrinter()
+        self.tempPath = "temp.html"
+        fcopy(htmlPath,self.tempPath)
+        freplace(self.tempPath,"print_stationName",visitorInfo.get("stationName").encode("utf-8"))
+        freplace(self.tempPath,"print_number",str(visitorInfo.get("snumber")))
+        freplace(self.tempPath,"print_queue",visitorInfo.get("queueName").encode("utf-8"))
+        freplace(self.tempPath,"print_waitNum",str(visitorInfo.get("waitNum")))
+        freplace(self.tempPath,"print_time",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        print "new Visitor Info : "
+        print visitorInfo.get("queueName")," ",visitorInfo.get("snumber")
+        #self.runPrinter()
+        self.runPrinter()
+
 
     def runPrinter(self):
-        path = self.floderbase + "style4.html"
+        path = self.floderbase + self.tempPath
         cmd = self.floderbase + "printhtml.exe " + " " + "file=" + path
         print cmd
         os.chdir(self.floderbase)

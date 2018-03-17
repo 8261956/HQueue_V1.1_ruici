@@ -276,7 +276,7 @@ class SyncManager(object):
         if not queue:
             queue = deque([])
         queue.extend(data)
-        CahedSetValue(json.dumps(key), queue, timeout=3600)
+        CahedSetValue(json.dumps(key), queue, timeout=300)
 
 
 def main():
