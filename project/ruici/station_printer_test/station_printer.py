@@ -5,7 +5,7 @@ import os,sys
 import json
 import time
 import codecs
-
+import requests
 import datetime
 
 from common.func import CachedGetValue, CahedSetValue
@@ -16,6 +16,10 @@ stationID = int(_config.get("station", "stationID"))
 server = _config.get("station", "server")
 htmlPath = _config.get("station", "htmlPath")
 
+
+headers = {
+    'content-type': 'application/json',
+}
 
 class StationPrinter(object):
 
@@ -33,6 +37,15 @@ class StationPrinter(object):
                 current_time = datetime.datetime.now()
                 print "[{0}] new visitor: {1}".format(current_time, result)
             time.sleep(2)
+
+    def reqNewVisitor():
+        data = {
+            'action':"getNextVisitor",
+            'stationID':self.stationID,
+        }
+        html = requests.post(urlBase + 'aqms/main/printer',data = json.dumps(data),headers = headers)
+        result = html.json()
+        
 
     def test(self):
         visitorInfo = {
