@@ -142,3 +142,9 @@ def CachedClearValue(key):
         print "Memcached clear error ,key"
         print Exception, ":", e
         print key
+
+def list2Dict(list):
+    d = {}
+    for item in list:
+        d[str(item["id"])] = item
+    return d

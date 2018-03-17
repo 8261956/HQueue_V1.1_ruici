@@ -168,7 +168,7 @@ class SyncManager(object):
         self.sync_local_data_fast()
 
     def sync_source_data_fast(self):
-	print "SYNC_FAST source in "
+        print "SYNC_FAST source in "
         start = datetime.datetime.now()
         for c in self.source_db_conn:
             conn = c["conn"]
@@ -256,8 +256,8 @@ class SyncManager(object):
         update_visitor_id = [data.id for data in source_visitor]
         insert_visitor_id = list(set(visitor_id_list) ^ set(update_visitor_id))
 	
-	print "SYNC_FAST source item size :", len(update_visitor_id)
-        print "SYNC_FAST insert item size :", len(insert_visitor_id)	
+        print "SYNC_FAST source item size :", len(update_visitor_id)
+        print "SYNC_FAST insert item size :", len(insert_visitor_id)
 
         for data in sync_data:
             id = data.id

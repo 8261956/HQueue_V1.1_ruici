@@ -9,7 +9,7 @@ import copy
 import datetime
 import time
 import common.config as cfg
-from common.func import packOutput,list2Str
+from common.func import packOutput,list2Str,list2Dict
 from common.func import LogOut
 from modules.queueInfo import QueueInfoInterface
 from common.func import checkSession
@@ -25,11 +25,10 @@ class LocalVisitor:
         pass
 
     @classmethod
-    def collectScore(cls,scene,sourceData,localData):  #收集访客的优先信息
+    def collectScore(cls,scene,sourceData,localData,qWorkDays, qDate):  #收集访客的优先信息
         stationID = sourceData["stationID"]
         queueID = sourceData["queueID"]
-        workDays, date = QueueInfoInterface().getWorkDays(stationID, queueID)
-        date = datetime.datetime.strptime(date, "%Y%m%d")
+        date = datetime.datetime.strptime(qDate, "%Y%m%d")
         level = LocalVisitor.collectLevel(sourceData, localData)
         rankWay = scene["rankWay"]
 
@@ -125,17 +124,19 @@ class QueueDataController:
         visitorLocalInterface = VisitorLocalInterface(stationID)
 
         filter = "stationID=%s and queueID=%s" % (str(stationID), str(queueID))
-        workDays, date = QueueInfoInterface().getWorkDays(stationID, queueID)
+        qWorkDays, qDate = QueueInfoInterface().getWorkDays(stationID, queueID)
         if cfg.currentDayOnly == "1":
-            filter += " and registDate>=%s" % date
+            filter += " and registDate>=%s" % qDate
         sourceList = DB.DBLocal.select("visitor_source_data", where=filter, order="registTime")
+        localList = list(DB.DBLocal.where("visitor_local_data", stationID=stationID))
+        localDict = list2Dict(localList)
         # 遍历visitor_source_data中满足条件的数据
         # 如果访客信息在visitor_local_data中查找不到，则初始化访客信息并添加，等待排序
         # 如果可以查找到，若originLevel和originScore改变了，则修改访客信息，等待排序
         for sourceItem in sourceList:
-            localItem = DB.DBLocal.where("visitor_local_data", id=sourceItem["id"], stationID=stationID)
+            localItem = localDict.get(sourceItem["id"],None)
 
-            if len(localItem) == 0:
+            if localItem is None:
                 localData = {
                     "id": sourceItem["id"],
                     "name": sourceItem["name"],
@@ -150,7 +151,7 @@ class QueueDataController:
                 }
                 status = "unactive" if scene["activeLocal"] else "waiting"
                 originLevel = LocalVisitor.collectLevel(sourceItem, localData)
-                originScore = LocalVisitor.collectScore(scene, sourceItem, localData)
+                originScore = LocalVisitor.collectScore(scene, sourceItem, localData,qWorkDays, qDate)
                 finalScore = finalScoreDef
                 localData.update({
                     "status": status,
@@ -160,9 +161,9 @@ class QueueDataController:
                 })
                 visitorLocalInterface.add(localData)
             else:
-                localData = iter(localItem).next()
+                localData = localItem
                 # 更新访客的分数
-                originScore = LocalVisitor.collectScore(scene, sourceItem, localData)
+                originScore = LocalVisitor.collectScore(scene, sourceItem, localData,qWorkDays, qDate)
                 originLevel = LocalVisitor.collectLevel(sourceItem, localData)
                 if localData["originScore"] != originScore or localData["originLevel"] != originLevel:
                     localData.update({
@@ -180,11 +181,10 @@ class QueueDataController:
                         localData.update({"status": "waiting"})
                     visitorLocalInterface.edit(localData)
 
-        self.sortVisitor(stationID, queueID, scene)
+        self.sortVisitor(stationID, queueID, scene ,qWorkDays, qDate)
 
-    def sortVisitor(self, stationID, queueID, scene):
+    def sortVisitor(self, stationID, queueID, scene,workDays, date):
         filter = "stationID=%s and queueID=%s" % (str(stationID), str(queueID))
-        workDays, date = QueueInfoInterface().getWorkDays(stationID, queueID)
         if cfg.currentDayOnly == "1":
             filter += " and registDate>=%s" % date
         ret = DB.DBLocal.select("visitor_local_data", where=filter, order="finalScore, originScore")
