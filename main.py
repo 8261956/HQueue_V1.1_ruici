@@ -35,7 +35,7 @@ urls = (
     '/(hqueue/manager/mediabox)', 'modules.mediabox.MediaBoxInterface',
     '/(hqueue/manager/CheckInDev)', 'modules.checkInDev.CheckInDevInterface',
     '/(hqueue/manager/scene)', "modules.scene.SceneInterface",
-    '/hqueue/main/extInterface', "project.ruici.extInterface.ExtInterface"
+    '/hqueue/main/extInterface', "project.ruici.extInterface.ExtInterface",
     '/hqueue/main/printer', "project.ruici.printerInterface.PrinterInterface"
 )
 
