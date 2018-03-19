@@ -137,8 +137,8 @@ class SyncManager(object):
 
     def sync_fast(self):
         self.sync_source_data_fast()
-        self.set_memcached_value()
         self.sync_local_data_fast()
+        self.set_memcached_value()
 
     def sync_source_data_fast(self):
         start = datetime.datetime.now()
