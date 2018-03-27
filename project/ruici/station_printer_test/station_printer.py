@@ -13,7 +13,7 @@ _config.read(os.path.join(os.path.dirname(__file__), 'config.ini'))
 stationID = int(_config.get("station", "stationID"))
 server = _config.get("station", "server")
 htmlPath = _config.get("station", "htmlPath")
-
+queueFilter = int(_config.get("station", "queueFilter"))
 
 urlBase = "http://" + server + "/hqueue"
 
@@ -45,7 +45,11 @@ class StationPrinter(object):
         html = requests.post(urlBase + '/main/printer',data = json.dumps(data),headers = headers)
         result = html.json()
         visitorInfo = result.get("detail")
+        print "req: " ,data
+        print "ret: " , result
         if visitorInfo == {}:
+            return
+        if visitorInfo.get("queueID") == queueFilter:
             return
         else:
             Printer().print2File(visitorInfo,htmlPath)
@@ -109,6 +113,7 @@ class Printer():
         fcopy(htmlPath,self.tempPath)
         freplace(self.tempPath,"print_stationName",visitorInfo.get("stationName","").encode("utf-8"))
         freplace(self.tempPath,"print_number",str(visitorInfo.get("snumber")))
+        freplace(self.tempPath,"print_name",visitorInfo.get("name","").encode("utf-8"))
         freplace(self.tempPath,"print_queue",visitorInfo.get("queueName","").encode("utf-8"))
         freplace(self.tempPath,"print_waitNum",str(visitorInfo.get("waitNum")))
         freplace(self.tempPath,"print_time",time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
