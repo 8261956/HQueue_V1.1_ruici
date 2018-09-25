@@ -19,7 +19,6 @@ from common.func import LogOut
 from modules.queueInfo import QueueInfoInterface
 from modules.scene import SceneInterface
 
-
 class StationMainController:
     def __init__(self):
         pass
@@ -106,6 +105,16 @@ class StationMainController:
         elif action == "visitorLockSet":
             try:
                 self.visitorLockSet(webData)
+                ret = {"result": "success"}
+            except Exception, e:
+                print Exception, ":", e
+                ret = {"result": "faild"}
+                return packOutput(ret,"500",str(e))
+            return packOutput(ret)
+
+        elif action == "visitorDescSet":
+            try:
+                self.visitorDescSet(webData)
                 ret = {"result": "success"}
             except Exception, e:
                 print Exception, ":", e
@@ -329,6 +338,17 @@ class StationMainController:
         else:
             visitor["locked"] = 0
         VisitorLocalInterface(stationID).edit(visitor)
+        return
+
+    def visitorDescSet(self,inputData):
+        from visitor import VisitorSourceInterface
+        stationID = inputData["stationID"]
+        queueID = inputData["queueID"]
+        visitor = {}
+        visitor["id"] = inputData["id"]
+        visitor["stationID"] = stationID
+        visitor["descText"] = inputData["descText"]
+        VisitorSourceInterface(stationID).edit(visitor)
         return
 
     def visitorFinishSet(self,inputData):
