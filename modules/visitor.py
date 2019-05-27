@@ -16,40 +16,43 @@ from queueData import QueueDataController
 from mainStation import StationMainController
 from queueInfo import QueueInfoInterface
 import time
-import datetime
+import datetime,traceback
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
-class VisitorController:
+db = DB.DBLocal
 
-    db = DB.DBLocal
+class VisitorController:
 
     def GET(self,name):
         return "患者添加接口请走POST方法"
 
     def POST(self,name):
         data = json.loads(web.data())
+        action  = data.get("action")
         try: 
             if action == "regist":
-                ret = self.regist(webData)
+                ret = self.regist(data)
                 return packOutput(ret)
             elif action == "cancel":
-                ret = self.cancel(webData)
+                ret = self.cancel(data)
                 return packOutput(ret)
         except Exception,e:
-            return packOutput({},"500",str(Exception))
+            print "Exception:",Exception,e
+            print traceback.format_exc()
+            return packOutput({},"500",str(e))
 
-    def regist(data):
+    def regist(self,data):
         vInfo = data.get("vInfo")   
         queue = vInfo.get("queue")
-        queueStr = "queue=" + queue
+        queueStr = "queue=\'" + queue + '\''
         queueInfo = db.select("queueInfo" ,where = {"filter" : queueStr}).first()
         if queueInfo is None:
             raise Exception("queue {0} Not found".format(queue))
 
         vInfo["stationID"] = queueInfo.get("stationID")
-        vInfo["queueID"] = queueInfo.get("queueID")
+        vInfo["queueID"] = queueInfo.get("id")
         print "get_visitor_from_http : ", vInfo
 
         ret = db.select("visitor_source_data" ,where = {"id" : vInfo["id"]}).first()
@@ -57,17 +60,17 @@ class VisitorController:
             print "get_visitor_from_http : new: ", vInfo
             interface = VisitorSourceInterface(vInfo["stationID"])
             interface.add(vInfo)
-        else
+        else:
             print "get_visitor_from_http : update: ", vInfo
             interface = VisitorSourceInterface(vInfo["stationID"])
             interface.edit(vInfo)
         
-        para = {"stationID":vInfo["stationID"] , vInfo["queueID"]}
+        para = {"stationID":vInfo["stationID"] , "queueID" : vInfo["queueID"]}
         QueueDataController().updateVisitor(para)
 
         return {"result":"success"}
 
-    def cancel(data):
+    def cancel(self,data):
         vid = data.get("id")
         visitorList = DB.DBLocal.select("visitor_local_data",
                                         where={"id": vid})
