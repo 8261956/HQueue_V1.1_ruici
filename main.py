@@ -37,6 +37,7 @@ urls = (
     '/(hqueue/manager/scene)', "modules.scene.SceneInterface",
     '/hqueue/main/extInterface', "project.ruici.extInterface.ExtInterface",
     '/hqueue/main/printer', "project.ruici.printerInterface.PrinterInterface"
+    '/(hqueue/main/visitor)', "modules.visitor.VisitorController",
 )
 
 def OracleTest():

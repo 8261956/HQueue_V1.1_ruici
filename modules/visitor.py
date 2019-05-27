@@ -21,6 +21,62 @@ import datetime
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
+class VisitorController:
+
+    db = DB.DBLocal
+
+    def GET(self,name):
+        return "患者添加接口请走POST方法"
+
+    def POST(self,name):
+        data = json.loads(web.data())
+        try: 
+            if action == "regist":
+                ret = self.regist(webData)
+                return packOutput(ret)
+            elif action == "cancel":
+                ret = self.cancel(webData)
+                return packOutput(ret)
+        except Exception,e:
+            return packOutput({},"500",str(Exception))
+
+    def regist(data):
+        vInfo = data.get("vInfo")   
+        queue = vInfo.get("queue")
+        queueStr = "queue=" + queue
+        queueInfo = db.select("queueInfo" ,where = {"filter" : queueStr}).first()
+        if queueInfo is None:
+            raise Exception("queue {0} Not found".format(queue))
+
+        vInfo["stationID"] = queueInfo.get("stationID")
+        vInfo["queueID"] = queueInfo.get("queueID")
+        print "get_visitor_from_http : ", vInfo
+
+        ret = db.select("visitor_source_data" ,where = {"id" : vInfo["id"]}).first()
+        if ret is None:
+            print "get_visitor_from_http : new: ", vInfo
+            interface = VisitorSourceInterface(vInfo["stationID"])
+            interface.add(vInfo)
+        else
+            print "get_visitor_from_http : update: ", vInfo
+            interface = VisitorSourceInterface(vInfo["stationID"])
+            interface.edit(vInfo)
+        
+        para = {"stationID":vInfo["stationID"] , vInfo["queueID"]}
+        QueueDataController().updateVisitor(para)
+
+        return {"result":"success"}
+
+    def cancel(data):
+        vid = data.get("id")
+        visitorList = DB.DBLocal.select("visitor_local_data",
+                                        where={"id": vid})
+        vLocalData = visitorList[0]
+        if vLocalData["prior"] != 1 and vLocalData["prior"] != 2 and vLocalData["status"] != "finish":
+            vStatus = {"id":id, "stationID":vLocalData["stationID"], "finish":1 }
+            StationMainController().visitorFinishSet(vStatus)
+        return {"result":"success"}
+
 class VisitorManager:
     def __init__(self):
         self.stationID = 0
