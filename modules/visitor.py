@@ -204,6 +204,8 @@ class VisitorManager:
                 continue
             if k == 'registDate':
                 continue
+            if k == 'descText':
+                continue
             if str(local[k]) != str(v):
                 print "unmatch source "+ str(v)+ " local " + str(local[k])
                 return -1

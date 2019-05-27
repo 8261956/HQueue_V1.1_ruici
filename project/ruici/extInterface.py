@@ -23,7 +23,7 @@ class ExtManager(object):
 
         """
         key = "_getPatientsInfo_ext"
-        value = CachedGetValue(json.dumps(key))
+        value = CachedGetValue(key)
         if value != False:
             return value
 
@@ -117,16 +117,18 @@ class ExtManager(object):
                 status = '预约'
             else:
                 status = '普通'
+            print "queueID :" ,queueID
+            print "queue_info :",queue_info
+            if queueID in queue_info:
+                p.update({
+                    "waitingNum": waitNum,
+                    "waitingTime": waitNum * 15,
+                    "queueName": queue_info[queueID],
+                    "localStatus": localStatus,
+                    "status": status
+                })
 
-            p.update({
-                "waitingNum": waitNum,
-                "waitingTime": waitNum * 15,
-                "queueName": queue_info[queueID],
-                "localStatus": localStatus,
-                "status": status
-            })
-
-        CahedSetValue(json.dumps(key), patients, 10)
+        CahedSetValue(key, patients, 10)
 
         return patients
 

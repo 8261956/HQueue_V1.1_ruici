@@ -120,7 +120,7 @@ def multiple_insert_sql(tablename, values):
         if v.keys() != keys:
             raise ValueError, 'Not all rows have the same keys'
 
-    sql_query = SQLQuery('INSERT INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
+    sql_query = SQLQuery('INSERT ignore INTO %s (%s) VALUES ' % (tablename, ', '.join(keys)))
 
     for i, row in enumerate(values):
         if i != 0:
@@ -131,7 +131,8 @@ def multiple_insert_sql(tablename, values):
     for key in keys:
         update = "%s=VALUES(%s)" % (key, key)
         tmp.append(update)
-    update_sql = ' ON DUPLICATE KEY UPDATE %s' % ', '.join(tmp)
+    #update_sql = ' ON DUPLICATE KEY UPDATE %s' % ', '.join(tmp)
+    update_sql = ''    
 
     SQLQuery.join(update_sql, sep="", target=sql_query)
 
@@ -165,6 +166,8 @@ def CahedSetValue(key,value, timeout):
         print key
         print value
 
+CachedSetValue = CahedSetValue
+
 def CachedClearValue(key):
     try:
         mc = memcached_wrapper.getMemcached()
@@ -178,6 +181,10 @@ def CachedClearValue(key):
 def list2Dict(list):
     d = {}
     for item in list:
-        d[str(item["id"])] = item
+        try :
+            d[str(item["id"])] = item
+        except:
+            print "item id encode error"   
+      
     return d
 

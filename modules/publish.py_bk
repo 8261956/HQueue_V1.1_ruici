@@ -33,33 +33,25 @@ class PublishTVInterface:
 
         webData = json.loads(web.data())
         action = webData["action"]
-        
-        key = "_getPublishList_" + str(json.dumps(webData))
-
-        value = common.func.CachedGetValue(key) 
-        if value != False:
-            print "Cached Get get Cached ok"
-            return value
-        print "Cached Get not ok ,",key
 
         if action == "getCallerList":
             try:
                 ret = self.getCallerList(webData)
+                return packOutput(ret)
             except Exception as e:
                 return packOutput({}, code="400", errorInfo=str(e))
         elif action == "getStationList":
             try:
                 ret = self.getStationList(webData)
+                return packOutput(ret)
             except Exception as e:
                 return packOutput({}, code="400", errorInfo=str(e))
         elif action == "getWinList":
             try:
                 ret = self.getWinList(webData)
+                return packOutput(ret)
             except Exception as e:
                 return packOutput({},code="400", errorInfo=str(e))
-        print "Cached Set key ,",key
-        common.func.CachedSetValue(key, ret, 3)
-        return packOutput(ret)
 
     def getValidDateTime(self):
         now = int(time.time())

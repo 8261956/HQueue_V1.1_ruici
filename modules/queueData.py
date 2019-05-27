@@ -7,7 +7,7 @@ import DBIO.DBBase as DB
 import json
 import copy
 import datetime
-import time
+import time,traceback
 import common.config as cfg
 from common.func import packOutput,list2Str,list2Dict
 from common.func import LogOut
@@ -471,7 +471,7 @@ class VisitorLocalInterface:
                 values.update({key: value})
         id = values.get("id")
         stationID = values.get("stationID")
-        print "UPDATE visitor_local_data: [Station]%s, [ID]%s" % (stationID, id)
+        #print "UPDATE visitor_local_data: [Station]%s, [ID]%s" % (stationID, id)
         result = DB.DBLocal.update("visitor_local_data",
                                    where="id=$id and stationID=$stationID",
                                    vars={"id": id, "stationID": stationID}, **values)

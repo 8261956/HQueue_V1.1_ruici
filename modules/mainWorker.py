@@ -438,6 +438,7 @@ class WorkerMainController:
         mediaBoxInterface = MediaBoxInterface()
         devList = publishDev.getInfo({"stationID":stationID})
         ret["list"] = []
+        ret["id"] = nextOne.get("id","")
         for dev in devList:
             # 增加语音盒在线判断
             mediabox = mediaBoxInterface.mediaBoxStatus(dev)

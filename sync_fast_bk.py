@@ -208,7 +208,7 @@ class SyncManager(object):
             conn: 数据源数据库连接
             sql: 查询SQL语句
         """
-        print "sync_sql: ", sql
+
         sync_data = conn.query(sql).list()
         sync_data = self.set_queue_info(sync_data)
         # conn._db_cursor().close()
@@ -225,7 +225,7 @@ class SyncManager(object):
 
         update_visitor_id = [data.id for data in source_visitor]
         insert_visitor_id = list(set(visitor_id_list) ^ set(update_visitor_id))
-        print "insert_visitor_id_len : ",len(insert_visitor_id)," ",sql
+
         values = []
         for data in sync_data:
             id = data.id
