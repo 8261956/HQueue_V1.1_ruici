@@ -39,7 +39,7 @@ class PublishTVInterface:
         value = common.func.CachedGetValue(key) 
         if value != False:
             print "Cached Get get Cached ok"
-            return value
+            return packOutput(value)
         print "Cached Get not ok ,",key
 
         if action == "getCallerList":
